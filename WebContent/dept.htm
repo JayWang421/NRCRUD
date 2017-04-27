@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<script type="text/javascript">
+	var xmlHttpRequest ;
+	function create(){	//创建Ajax核心处理对象
+		if(window.XMLHttpRequest){	//不是IE浏览器
+			xmlHttpRequest=new XMLHttpRequest() ;
+		}else{
+			xmlHttpRequest=new ActiveXObject("Microsoft.XMLHttp") ;
+		}
+	}
+	
+	window.onload=function(){
+		loadDept() ;
+	}
+	function loadDept(){
+		create() ;
+		xmlHttpRequest.open("post","DeptServlet/list");
+		xmlHttpRequest.send(null) ;
+		xmlHttpRequest.onreadystatechange=function(){
+			if(xmlHttpRequest.readyState == 4 && xmlHttpRequest.status ==200){
+				deptObj=eval("("+xmlHttpRequest.responseText+")");
+				alert(deptObj);
+				for(x=0 ;x<deptObj.alldepts.length ; x++){
+					addRow(deptObj.alldepts[x].deptno,deptObj.alldepts[x].dname) ;			
+				}
+			}
+		}
+		document.getElementById("editDept").addEventListener("click",function(){
+			editdeptnoNewVal=document.getElementById("editdeptno").value ;
+			editdnameNewVal=document.getElementById("editname").value ;
+			create() ;
+			xmlHttpRequest.open("post","DeptServlet/edit?deptno="+editdeptnoNewVal+"&dname="+editdnameNewVal) ;
+			xmlHttpRequest.send(null) ;
+			xmlHttpRequest.onreadystatechange=function(){
+				if(xmlHttpRequest.readyState == 4 && xmlHttpRequest.status ==200){
+					document.getElementById("deptEditDiv").style.display="none" ;
+					if(xmlHttpRequest.responseText.trim()=="true"){
+						console.log(xmlHttpRequest.responseText.trim()) ;
+						document.getElementById("dname-"+editdeptnoNewVal).innerHTML=editdnameNewVal ;
+					}else{
+						alert("修改出错") ;
+					}
+				}
+			}
+		},false) ;
+		document.getElementById("addDept").addEventListener("click",function(){
+			dnameVal=document.getElementById("dname").value ;
+			if(dnameVal!=""){
+				create() ;
+				xmlHttpRequest.open("post","DeptServlet/add?dname="+dnameVal) ;
+				xmlHttpRequest.send(null) ;
+				xmlHttpRequest.onreadystatechange=function(){
+					if(xmlHttpRequest.readyState == 4 && xmlHttpRequest.status ==200){
+						console.log(xmlHttpRequest.responseText.trim()) ;
+						if(xmlHttpRequest.responseText.trim()=="0"){
+							alert("增加失败") ;
+						}else{
+							addRow(xmlHttpRequest.responseText.trim(),dnameVal) ;
+							document.getElementById("dname").value="" ;
+						}
+					}
+				}
+			}
+		},false ) ;
+	}
+	
+	function addRow(deptno,dname){
+		deptTable=document.getElementById("deptTable") ;
+		deptTrElement=document.createElement("tr") ;
+		deptTrElement.setAttribute("id","dept-"+deptno) ;
+		deptnoTdElement=document.createElement("td") ;
+		deptnoTdElement.setAttribute("id","deptno-"+deptno) ;
+		dnameTdElement=document.createElement("td") ;
+		dnameTdElement.setAttribute("id","dname-"+deptno) ;
+		editTdElement=document.createElement("td") ;
+		deleteTdElement=document.createElement("td") ;
+		
+		deptnoTdElement.appendChild(document.createTextNode(deptno)) ;
+		dnameTdElement.appendChild(document.createTextNode(dname)) ;
+		
+		editElement=document.createElement("button") ;
+		editElement.setAttribute("id","edit-"+deptno) ;
+		editElement.appendChild(document.createTextNode("编辑")) ;
+		deleteElement=document.createElement("button") ;
+		deleteElement.setAttribute("id","delete-"+deptno) ;
+		deleteElement.appendChild(document.createTextNode("删除")) ;
+		editTdElement.appendChild(editElement) ;
+		deleteTdElement.appendChild(deleteElement) ;
+		
+		deptTrElement.appendChild(deptnoTdElement) ;
+		deptTrElement.appendChild(dnameTdElement) ;
+		deptTrElement.appendChild(editTdElement) ;
+		deptTrElement.appendChild(deleteTdElement) ;
+		deptTable.appendChild(deptTrElement) ;
+		
+		editElement.addEventListener("click",function(){
+			editdeptnoVal=document.getElementById("deptno-"+deptno).firstChild.nodeValue ;
+			editdnameVal=document.getElementById("dname-"+deptno).firstChild.nodeValue ;
+			document.getElementById("editdeptno").value=editdeptnoVal ;
+			document.getElementById("editname").value=editdnameVal ;
+			document.getElementById("deptEditDiv").style.display="block" ; //显示
+		},false) ;
+		deleteElement.addEventListener("click",function(){
+			removeRow(deptno) ;
+		},false) ;
+	}
+	function removeRow(deptno){
+		if(window.confirm("确定要删除吗？")){
+			create() ;
+			xmlHttpRequest.open("post","DeptServlet/delete?deptno="+deptno) ;
+			xmlHttpRequest.send(null) ;
+			xmlHttpRequest.onreadystatechange=function(){
+				if(xmlHttpRequest.readyState == 4 && xmlHttpRequest.status ==200){
+					if(xmlHttpRequest.responseText.trim()=="true"){
+						deptTrElement=document.getElementById("dept-"+deptno) ;
+						deptTrElement.parentNode.removeChild(deptTrElement) ;
+					}else{
+						alert("删除失败") ;
+					}
+				}
+			}
+		}
+	}
+	
+</script>
+</head>
+<body>
+	<table border="1" id="deptTable">
+		<tr>
+			<td>部门编号</td><td>部门名称</td><td colspan="2">操作</td>
+		</tr>
+	</table>
+	<div id="deptEditDiv" style="display:none;">
+		<input type="text" id="editdeptno" name="editdeptno">
+		<input type="text" id="editname" name="editname">
+		<input type="button" id="editDept" value="修改">
+	</div>
+	<div id="deptForm">
+		部门名称：<input type="text" id="dname" name="dname">
+		<input type="button" id="addDept" value="部门增加">
+	</div>
+</body>
+</html>
